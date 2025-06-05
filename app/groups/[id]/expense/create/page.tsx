@@ -13,6 +13,8 @@ import MaxWidthWrapper from "@/components/max-width-wrapper"
 import { useAuth } from "@/hooks/use-auth"
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase"
+import { expenseCategorizer } from "@/lib/expense-categorizer"
+import { CreditCard, Plus, ArrowLeft } from 'lucide-react'
 
 interface Member {
   id: string
@@ -31,6 +33,9 @@ export default function CreateExpensePage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
+  const [categoryIcon, setCategoryIcon] = useState<React.ElementType>(CreditCard)
+  const [categoryColor, setCategoryColor] = useState<string>("text-primary dark:text-destructive")
+  const [categoryName, setCategoryName] = useState<string>("Expense")
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,6 +48,20 @@ export default function CreateExpensePage() {
       checkGroupMembership()
     }
   }, [user, params.id])
+
+  // Update category in real-time as user types
+  useEffect(() => {
+    if (description.trim().length > 0) {
+      const category = expenseCategorizer.categorizeExpense(description)
+      setCategoryIcon(category.icon)
+      setCategoryColor("text-primary dark:text-destructive") // Keep primary color as requested
+      setCategoryName(category.name)
+    } else {
+      setCategoryIcon(CreditCard)
+      setCategoryColor("text-primary dark:text-destructive")
+      setCategoryName("Expense")
+    }
+  }, [description])
 
   const checkGroupMembership = async () => {
     if (!user) return
@@ -217,7 +236,10 @@ export default function CreateExpensePage() {
     return (
       <MaxWidthWrapper className="py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading...</div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-lg text-muted-foreground">Loading...</div>
+          </div>
         </div>
       </MaxWidthWrapper>
     )
@@ -229,44 +251,74 @@ export default function CreateExpensePage() {
 
   const expenseAmount = Number.parseFloat(amount) || 0
   const splitAmounts = distributeAmount(expenseAmount, selectedMembers.length)
+  const IconComponent = categoryIcon
 
   return (
     <MaxWidthWrapper className="py-8">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Add New Expense</CardTitle>
-          <CardDescription>Split a new expense among group members</CardDescription>
+      <Card className="max-w-2xl mx-auto border border-border">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary">
+              <IconComponent className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <CardTitle>Add New {categoryName}</CardTitle>
+              <CardDescription>Split a new expense among group members</CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                placeholder="e.g., Dinner at restaurant, Gas for trip"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              />
+              <Label htmlFor="description" className="text-foreground">
+                Description
+              </Label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  <IconComponent className={`h-5 w-5 ${categoryColor}`} />
+                </div>
+                <Input
+                  id="description"
+                  placeholder="e.g., Dinner at restaurant, Gas for trip"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="pl-10 border-border focus:border-primary focus:ring-primary"
+                  required
+                />
+              </div>
+              {description.trim().length > 0 && (
+                <p className="text-xs text-primary dark:text-destructive flex items-center gap-1 mt-1">
+                  <IconComponent className="h-3 w-3" />
+                  Categorized as {categoryName}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount ($)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
+              <Label htmlFor="amount" className="text-foreground">
+                Amount ($)
+              </Label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</div>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pl-8 border-border focus:border-primary focus:ring-primary"
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="paidBy">Paid by</Label>
+              <Label htmlFor="paidBy" className="text-foreground">
+                Paid by
+              </Label>
               <Select value={paidBy} onValueChange={setPaidBy}>
-                <SelectTrigger>
+                <SelectTrigger className="border-border focus:border-primary focus:ring-primary">
                   <SelectValue placeholder="Select who paid" />
                 </SelectTrigger>
                 <SelectContent>
@@ -280,33 +332,67 @@ export default function CreateExpensePage() {
             </div>
 
             <div className="space-y-3">
-              <Label>Split between</Label>
-              <div className="space-y-2">
-                {members.map((member, index) => (
-                  <div key={member.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={member.id}
-                      checked={selectedMembers.includes(member.id)}
-                      onCheckedChange={() => handleMemberToggle(member.id)}
-                    />
-                    <Label htmlFor={member.id} className="flex-1">
-                      {member.name}
-                    </Label>
-                    {selectedMembers.includes(member.id) && amount && (
-                      <span className="text-sm text-muted-foreground">
-                        ${splitAmounts[selectedMembers.indexOf(member.id)]?.toFixed(2) || "0.00"}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <Label className="text-foreground">Split between</Label>
+              <Card className="border border-border">
+                <CardContent className="p-4 space-y-2">
+                  {members.map((member, index) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={member.id}
+                          checked={selectedMembers.includes(member.id)}
+                          onCheckedChange={() => handleMemberToggle(member.id)}
+                          className="border-border text-primary focus:ring-primary"
+                        />
+                        <Label htmlFor={member.id} className="flex-1 text-foreground cursor-pointer">
+                          {member.name}
+                        </Label>
+                      </div>
+                      {selectedMembers.includes(member.id) && amount && (
+                        <span className="text-sm font-medium text-primary dark:text-destructive">
+                          ${splitAmounts[selectedMembers.indexOf(member.id)]?.toFixed(2) || "0.00"}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              {selectedMembers.length > 0 && amount && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total split amount:</span>
+                  <span className="font-medium text-primary dark:text-destructive">${expenseAmount.toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={loading || selectedMembers.length === 0}>
-                {loading ? "Adding..." : "Add Expense"}
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="submit"
+                disabled={loading || selectedMembers.length === 0}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                    Adding...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add {categoryName}
+                  </div>
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="border-border text-foreground hover:bg-muted"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
             </div>
