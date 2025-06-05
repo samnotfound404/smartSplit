@@ -1,0 +1,164 @@
+/* components/Loader.module.css */
+
+/* 1) Full-screen container with transparent background */
+.loaderContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: transparent; /* fully transparent backdrop */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* on top of everything */
+}
+
+/* 2) SVG sizing */
+.pl {
+  width: 11em;
+  height: 10em;
+}
+
+/* 3) Animate all parts of the “worm” */
+.pl__ring,
+.pl__worm1,
+.pl__worm2,
+.pl__worm3 {
+  animation-duration: 4s;
+  animation-iteration-count: infinite;
+}
+
+/* 4) The faint static circle behind */
+.pl__ring {
+  stroke: hsla(223, 10%, 10%, 0.1); /* unchanged, faint gray ring */
+}
+
+/* 5) Each “worm” path gets its own keyframe name */
+.pl__worm1 {
+  animation-name: loader-worm1;
+}
+
+.pl__worm2 {
+  animation-name: loader-worm2;
+  transform-origin: 32px 88px;
+}
+
+.pl__worm3 {
+  animation-name: loader-worm3;
+  transform-origin: 144px 88px;
+}
+
+/* 6) Dark-mode override for the ring’s stroke color */
+@media (prefers-color-scheme: dark) {
+  .pl__ring {
+    stroke: hsla(223, 10%, 90%, 0.1);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7) Keyframes (names are prefixed with “loader-” to avoid collisions)
+──────────────────────────────────────────────────────────────────────────────── */
+@keyframes loader-worm1 {
+  from {
+    animation-timing-function: ease-out;
+    stroke-dashoffset: 43.98;
+  }
+  12.5% {
+    animation-timing-function: ease-in-out;
+    stroke-dashoffset: -131.95;
+  }
+  25% {
+    animation-timing-function: ease-in;
+    stroke-dashoffset: 0;
+  }
+  37.5%,
+  50% {
+    animation-timing-function: ease-out;
+    stroke-dashoffset: -175.93;
+  }
+  62.5% {
+    animation-timing-function: ease-in-out;
+    stroke-dashoffset: 0;
+  }
+  75% {
+    animation-timing-function: ease-in;
+    stroke-dashoffset: -131.95;
+  }
+  87.5%,
+  to {
+    stroke-dashoffset: 43.98;
+  }
+}
+
+@keyframes loader-worm2 {
+  from,
+  35.5% {
+    animation-timing-function: linear;
+    stroke-dasharray: 0 40 0 44;
+    visibility: hidden;
+    transform: translate(0, 0) rotate(0);
+  }
+  37.5% {
+    animation-timing-function: ease-out;
+    stroke-dasharray: 0 40 44 0;
+    visibility: visible;
+    transform: translate(0, 0) rotate(0);
+  }
+  47.5% {
+    animation-timing-function: ease-in;
+    stroke-dasharray: 0 4 40 40;
+    visibility: visible;
+    transform: translate(0, -80px) rotate(360deg);
+  }
+  50% {
+    animation-timing-function: linear;
+    stroke-dasharray: 0 4 40 40;
+    visibility: visible;
+    transform: translate(0, -36px) rotate(360deg);
+  }
+  52.5%,
+  to {
+    stroke-dasharray: 0 42 0 42;
+    visibility: hidden;
+    transform: translate(0, 12px) rotate(360deg);
+  }
+}
+
+@keyframes loader-worm3 {
+  from {
+    animation-timing-function: linear;
+    stroke-dasharray: 0 4 40 40;
+    visibility: visible;
+    transform: translate(0, -36px) rotate(0);
+  }
+  2.5% {
+    animation-timing-function: linear;
+    stroke-dasharray: 0 42 0 42;
+    visibility: hidden;
+    transform: translate(0, 12px) rotate(0);
+  }
+  85.5% {
+    animation-timing-function: linear;
+    stroke-dasharray: 0 40 0 44;
+    visibility: hidden;
+    transform: translate(0, 0) rotate(0);
+  }
+  87.5% {
+    animation-timing-function: ease-out;
+    stroke-dasharray: 0 40 44 0;
+    visibility: visible;
+    transform: translate(0, 0) rotate(0);
+  }
+  97.5% {
+    animation-timing-function: ease-in;
+    stroke-dasharray: 0 4 40 40;
+    visibility: visible;
+    transform: translate(0, -80px) rotate(-360deg);
+  }
+  to {
+    stroke-dasharray: 0 4 40 40;
+    visibility: visible;
+    transform: translate(0, -36px) rotate(-360deg);
+  }
+}
